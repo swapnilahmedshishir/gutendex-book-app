@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="View your saved wishlist from the Gutendex Book Library.">
+    <meta name="keywords" content="wishlist, Gutendex API, books, book wishlist, saved books">
+
+    <title>Your Wishlist - Gutendex Book Library</title>
+
+    <!-- Google Fonts for Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <!-- Link to Reset CSS for Cross-Browser Consistency -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css">
+
+    <!-- Link to Main CSS File -->
+    <link rel="stylesheet" href="../css/style.css">
+
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f4f4; /* Background color */
+            margin: 0; /* Margin reset */
+        }
+
+        /* Navbar Styles */
+        nav ul {
+            list-style: none;
+            display: flex;
+            justify-content: space-around; /* Space items evenly */
+            background-color: #333;
+            padding: 10px;
+            margin: 0; /* Margin reset */
+        }
+
+        nav ul li {
+            margin: 0;
+        }
+
+        nav ul li a {
+            color: white;
+            text-decoration: none;
+            padding: 10px 20px;
+            transition: background-color 0.3s; /* Smooth hover effect */
+        }
+
+        nav ul li a:hover {
+            background-color: #575757; /* Hover effect for links */
+        }
+
+        h2 {
+            text-align: center;
+            margin: 20px 0;
+            color: #333; /* Slightly darker color for heading */
+        }
+
+        #wishlist {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center; /* Center items in the wishlist */
+            padding: 20px;
+        }
+
+        .book-card {
+            width: 200px;
+            border: 1px solid #ccc;
+            margin: 10px;
+            padding: 10px;
+            text-align: center;
+            background-color: white; /* Card background color */
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); /* Shadow effect */
+            border-radius: 5px; /* Rounded corners */
+            transition: transform 0.2s; /* Animation for hover */
+        }
+
+        .book-card:hover {
+            transform: scale(1.05); /* Slight zoom effect on hover */
+        }
+
+        .book-card img {
+            max-width: 150px;
+            height: auto;
+            margin-bottom: 10px;
+        }
+
+        /* Empty message styling */
+        .empty-message {
+            text-align: center;
+            color: #555;
+            font-size: 1.2em; /* Increased font size for emphasis */
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar with ARIA for Accessibility -->
+    <nav aria-label="Main Navigation">
+        <ul>
+            <li><a href="../index.html" aria-label="Go to Homepage">Home</a></li>
+            <li><a href="wishlist.html" aria-label="View Wishlist">Wishlist</a></li>
+        </ul>
+    </nav>
+
+    <!-- Wishlist Container -->
+    <main>
+        <h2>Your Wishlist</h2>
+        <section id="wishlist" class="book-list" aria-live="polite" aria-label="List of Wishlist Books">
+            <!-- Wishlist books will be loaded here dynamically -->
+        </section>
+        <div id="empty-message" class="empty-message" style="display: none;">
+            Your wishlist is empty.
+        </div>
+    </main>
+
+    <!-- External JavaScript for Wishlist Functionality -->
+    <script>
+        // Load wishlist items from localStorage
+        document.addEventListener('DOMContentLoaded', () => {
+            const wishlistContainer = document.getElementById('wishlist');
+            const emptyMessage = document.getElementById('empty-message');
+
+            // Retrieve the wishlist from localStorage
+            let wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
+
+            // Check if the wishlist is empty
+            if (wishlist.length === 0) {
+                emptyMessage.style.display = 'block'; // Show empty message
+            } else {
+                emptyMessage.style.display = 'none'; // Hide empty message
+
+                // Fetch book details from the API
+                const apiUrl = `https://gutendex.com/books?ids=${wishlist.join(',')}`;
+
+                fetch(apiUrl)
+                    .then(response => response.json())
+                    .then(data => {
+                        const books = data.results || [];
+                        books.forEach(book => {
+                            const itemDiv = document.createElement('div');
+                            itemDiv.className = 'book-card'; // Use the same class as book cards
+                            itemDiv.innerText = book.title; // Assuming book is an object with a title property
+
+                            // Optionally add an image if the book object contains an image property
+                            if (book.formats['image/jpeg']) {
+                                const img = document.createElement('img');
+                                img.src = book.formats['image/jpeg']; // Use image from the book formats
+                                img.alt = `${book.title} cover image`; // Alt text for accessibility
+                                itemDiv.appendChild(img); // Add image to card
+                            }
+
+                            // Create a remove button to remove from wishlist
+                            const removeBtn = document.createElement('button');
+                            removeBtn.innerText = 'Remove ❌';
+                            removeBtn.onclick = () => {
+                                removeFromWishlist(book.id);
+                                wishlistContainer.removeChild(itemDiv); // Remove book card from display
+                            };
+                            itemDiv.appendChild(removeBtn); // Add button to card
+
+                            wishlistContainer.appendChild(itemDiv); // Add to the wishlist container
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error fetching wishlist books:', error);
+                        emptyMessage.innerText = 'Failed to load your wishlist. Please try again later.';
+                        emptyMessage.style.display = 'block'; // Show error message
+                    });
+            }
+        });
+
+        // Remove book from wishlist
+        function removeFromWishlist(bookId) {
+            let wishlist = JSON.parse(localStorage.getItem('wishlist')) || [];
+            wishlist = wishlist.filter(id => id !== bookId); // Remove the book ID
+            localStorage.setItem('wishlist', JSON.stringify(wishlist)); // Update localStorage
+            if (wishlist.length === 0) {
+                document.getElementById('empty-message').style.display = 'block'; // Show empty message
+            }
+        }
+    </script>
+</body>
+
+</html>

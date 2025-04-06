@@ -45,9 +45,10 @@ function displayBooks(bookList) {
                 <img src="${
                   book.formats["image/jpeg"] || "placeholder.jpg"
                 }" alt="${book.title}" loading="lazy">
+                <div>
                 <h3>${book.title}</h3>
                 <p>Author: ${book.authors[0]?.name || "Unknown"}</p>
-                <p>Genre: ${book.subjects[0] || "Unknown"}</p>
+                <p>Genre: ${book.subjects[0] || "Unknown"}</p></div>
                 <button onclick="addToWishlist(${book.id})">❤️</button>
                 <a href="book-detail.html?id=${book.id}">Details</a>
             </div>
